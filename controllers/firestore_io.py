@@ -41,3 +41,8 @@ class FirestoreIO:
         doc_dict = doc_ref.get().to_dict()
         doc_dict.update({'id': doc_ref.id})
         return doc_dict
+
+    def delete(self, collection, doc_id):
+        doc_ref = self.db.collection(collection).document(doc_id)
+        doc_ref.delete()
+        return

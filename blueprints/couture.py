@@ -29,6 +29,12 @@ def update(doc_id):
     return jsonify(firestore_io.update(collection, doc_id, request.get_json()))
 
 
+@couture_bp.route('/<doc_id>', methods=['DELETE'])
+def delete(doc_id):
+    firestore_io = FirestoreIO()
+    return jsonify(firestore_io.delete(collection, doc_id))
+
+
 @couture_bp.route('/<doc_id>/image', methods=['POST'])
 def upload_image(doc_id):
     storage_io = StorageIO()
