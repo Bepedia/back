@@ -25,14 +25,20 @@ class FirestoreIO:
     def get(self, collection, doc_id):
         doc = self.db.collection(collection).document(doc_id).get()
         doc_dict = doc.to_dict()
+        if not doc_dict:
+            return None
         doc_dict.update({'id': doc.id})
         return doc_dict
 
-    def insert(self, collection, data):
-        doc_ref = self.db.collection(collection).document()
+    def insert(self, collection, data, id=None):
+        if id:
+            doc_ref = self.db.collection(collection).document(id)
+        else:
+            doc_ref = self.db.collection(collection).document()
         doc_ref.set(data)
         doc_dict = doc_ref.get().to_dict()
-        doc_dict.update({'id': doc_ref.id})
+        if not id:
+            doc_dict.update({'id': doc_ref.id})
         return doc_dict
 
     def update(self, collection, doc_id, data):
@@ -46,3 +52,12 @@ class FirestoreIO:
         doc_ref = self.db.collection(collection).document(doc_id)
         doc_ref.delete()
         return
+
+    def search(self, collection, key, value):
+        docs_dict = []
+        docs = self.db.collection(collection).where(key, u'==', value).stream()
+        for doc in docs:
+            doc_dict = doc.to_dict()
+            doc_dict['id'] = doc.id
+            docs_dict.append(doc_dict)
+        return docs_dict
