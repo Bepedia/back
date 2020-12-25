@@ -21,7 +21,7 @@ def search():
     sorted = []
     all_nendoroids = firestore_io.list(collection)
     for n in all_nendoroids:
-        if query in n['id'] or query in n['name'].lower():
+        if query.lower() in n['id'] or query.lower() in n['name'].lower():
             sorted.append(n)
     return jsonify(sorted)
 
