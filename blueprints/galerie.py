@@ -23,6 +23,6 @@ def upload_image():
     storage_io = StorageIO()
     firestore_io = FirestoreIO()
     file = request.files['file']
-    url = storage_io.post_img(file, collection + '/' + file.filename)
+    url = storage_io.post_img(file, file.content_type.replace('image/', ''), collection)
     return firestore_io.insert(collection, {'url': url})
 

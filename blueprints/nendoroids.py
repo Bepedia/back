@@ -11,19 +11,27 @@ nendoroids_bp = Blueprint(collection, __name__)
 @nendoroids_bp.route('')
 def list():
     firestore_io = FirestoreIO()
-    return jsonify(firestore_io.list(collection))
+    query = request.args.get('q')
+    owned = request.args.get('owned')
+    if owned == "all":
+        owned = None
+    if query or owned:
+        all_nendoroids = firestore_io.list(collection)
+        sorted = []
+        for n in all_nendoroids:
+            if query:
+                if query.lower() in n['id'] or query.lower() in n['name'].lower():
+                    sorted.append(n)
+                    continue
+            if owned:
+                if owned == 'owned' and n['owned']:
+                    sorted.append(n)
+                elif owned == 'not-owned' and not n['owned']:
+                    sorted.append(n)
 
-
-@nendoroids_bp.route('search')
-def search():
-    query = request.args['q']
-    firestore_io = FirestoreIO()
-    sorted = []
-    all_nendoroids = firestore_io.list(collection)
-    for n in all_nendoroids:
-        if query.lower() in n['id'] or query.lower() in n['name'].lower():
-            sorted.append(n)
-    return jsonify(sorted)
+        return jsonify(sorted)
+    else:
+        return jsonify(firestore_io.list(collection))
 
 
 @nendoroids_bp.route('/<doc_id>', methods=['PATCH'])
@@ -32,10 +40,20 @@ def patch(doc_id):
     return jsonify(firestore_io.update(collection, doc_id, request.get_json()))
 
 
-@nendoroids_bp.route('/owned', methods=['GET'])
-def get_owned():
+@nendoroids_bp.route('/stats')
+def get_stats():
     firestore_io = FirestoreIO()
-    return jsonify(firestore_io.search(collection, 'owned', True))
+    all_nendoroids = firestore_io.list(collection)
+    stats = {
+        "owned": 0,
+        "not_owned": 0
+    }
+    for n in all_nendoroids:
+        if n.get("owned"):
+            stats["owned"] += 1
+        else:
+            stats["not_owned"] += 1
+    return jsonify(stats)
 
 
 @nendoroids_bp.route('/update')

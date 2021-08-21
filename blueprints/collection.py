@@ -1,29 +1,28 @@
-import uuid
-from datetime import datetime
-
 from flask import Blueprint, jsonify, request
 from controllers import FirestoreIO, StorageIO
+from datetime import datetime
+import uuid
+
 from controllers.user_io import get_user
 
-collection = 'recette'
 
-recette_bp = Blueprint(collection, __name__)
+main_bp = Blueprint('collection', __name__)
 
 
-@recette_bp.route('')
-def get_recettes():
+@main_bp.route('/<collection>')
+def list_collection(collection):
     firestore_io = FirestoreIO()
     return jsonify(firestore_io.list(collection))
 
 
-@recette_bp.route('/<doc_id>')
-def get(doc_id):
+@main_bp.route('/<collection>/<doc_id>')
+def get(collection, doc_id):
     firestore_io = FirestoreIO()
     return jsonify(firestore_io.get(collection, doc_id))
 
 
-@recette_bp.route('', methods=['POST'])
-def create():
+@main_bp.route('/<collection>', methods=['POST'])
+def create(collection):
     firestore_io = FirestoreIO()
     document = request.get_json()
     document["creation_date"] = datetime.now().isoformat()
@@ -32,14 +31,14 @@ def create():
     return jsonify(firestore_io.insert(collection, document))
 
 
-@recette_bp.route('/<doc_id>', methods=['PATCH'])
-def update(doc_id):
+@main_bp.route('/<collection>/<doc_id>', methods=['PATCH'])
+def update(collection, doc_id):
     firestore_io = FirestoreIO()
     return jsonify(firestore_io.update(collection, doc_id, request.get_json()))
 
 
-@recette_bp.route('/<doc_id>/comment', methods=['POST'])
-def comment(doc_id):
+@main_bp.route('/<collection>/<doc_id>/comment', methods=['POST'])
+def comment(collection, doc_id):
     comment = request.get_json()
     comment["creation_date"] = datetime.now().isoformat()
     comment["author"] = get_user(request.headers)
@@ -54,8 +53,8 @@ def comment(doc_id):
     return jsonify(firestore_io.update(collection, doc_id, item))
 
 
-@recette_bp.route('/<doc_id>/comment/<comment_id>', methods=['DELETE'])
-def delete_comment(doc_id, comment_id):
+@main_bp.route('/<collection>/<doc_id>/comment/<comment_id>', methods=['DELETE'])
+def delete_comment(collection, doc_id, comment_id):
     firestore_io = FirestoreIO()
     item = firestore_io.get(collection, doc_id)
     for c in item.get("comments", []):
@@ -64,14 +63,14 @@ def delete_comment(doc_id, comment_id):
     return jsonify(firestore_io.update(collection, doc_id, item))
 
 
-@recette_bp.route('/<doc_id>', methods=['DELETE'])
-def delete(doc_id):
+@main_bp.route('/<collection>/<doc_id>', methods=['DELETE'])
+def delete(collection, doc_id):
     firestore_io = FirestoreIO()
     return jsonify(firestore_io.delete(collection, doc_id))
 
 
-@recette_bp.route('/<doc_id>/image', methods=['POST'])
-def upload_image(doc_id):
+@main_bp.route('/<collection>/<doc_id>/image', methods=['POST'])
+def upload_image(collection, doc_id):
     storage_io = StorageIO()
     firestore_io = FirestoreIO()
     file = request.files['file']
