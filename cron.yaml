@@ -1,0 +1,4 @@
+cron:
+- description: "sync nendoroids"
+  url: /api/nendoroids/update
+  schedule: 1 of month 00:00
