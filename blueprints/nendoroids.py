@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from controllers import FirestoreIO
 import requests
 from bs4 import BeautifulSoup
+import copy 
+import re
 
 collection = 'nendoroids'
 
@@ -13,12 +15,17 @@ def list():
     firestore_io = FirestoreIO()
     query = request.args.get('q')
     owned = request.args.get('owned')
+
     if owned == "all":
         owned = None
+
+    all_nendoroids = firestore_io.list(collection)
+
     if query or owned:
-        all_nendoroids = firestore_io.list(collection)
         sorted = []
+
         for n in all_nendoroids:
+
             if query:
                 if query.lower() in n['id'] or query.lower() in n['name'].lower():
                     sorted.append(n)
@@ -29,9 +36,10 @@ def list():
                 elif owned == 'not-owned' and not n['owned']:
                     sorted.append(n)
 
-        return jsonify(sorted)
-    else:
-        return jsonify(firestore_io.list(collection))
+        all_nendoroids = copy.deepcopy(sorted)
+    
+    all_nendoroids.sort(key=lambda n: n.get("int_id", '0'))
+    return jsonify(all_nendoroids)
 
 
 @nendoroids_bp.route('/<doc_id>', methods=['PATCH'])
@@ -66,7 +74,8 @@ def update():
             firestore_io.insert(collection, n, n['id'])
             print(f"Added Nendoroid {n['id']} - {n['name']}")
         else:
-            print(f"Nendoroid {n['id']} - {n['name']} already exists")
+            print(f"Nendoroid {n['id']} - {n['name']} already exists, updating")
+            firestore_io.update(collection, n['id'], n)
     return "done"
 
 
@@ -96,6 +105,12 @@ def scrap_for_nendoroids():
             text = nc.text.replace('\n\n\n\n', '').split('\n\n')
             nendoroid['name'] = text[0]
             nendoroid['id'] = text[1].replace('\n', '').replace(' ', '')
+            match_number = re.search("[0-9][0-9]*", nendoroid['id'])
+            if match_number:
+                nendoroid['int_id'] = int(match_number.group())
+            else:
+                nendoroid['int_id'] = 999_999
+
 
             for c in link.children:
                 if c == '\n':
