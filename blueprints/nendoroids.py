@@ -28,9 +28,15 @@ def list():
 
             if query:
                 if query.lower() in n['id'] or query.lower() in n['name'].lower():
-                    sorted.append(n)
+                    if owned:
+                        if owned == 'owned' and n['owned']:
+                            sorted.append(n)
+                        elif owned == 'not-owned' and not n['owned']:
+                            sorted.append(n)
+                    else:
+                        sorted.append(n)
                     continue
-            if owned:
+            if owned and not query:
                 if owned == 'owned' and n['owned']:
                     sorted.append(n)
                 elif owned == 'not-owned' and not n['owned']:
