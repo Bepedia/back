@@ -47,7 +47,7 @@ class FirestoreIO:
 
     def update(self, collection, doc_id, data):
         doc_ref = self.db.collection(collection).document(doc_id)
-        doc_ref.update(data)
+        doc_ref.set(data, merge=True)
         doc_dict = doc_ref.get().to_dict()
         doc_dict.update({'id': doc_ref.id})
         return doc_dict

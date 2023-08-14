@@ -75,6 +75,7 @@ def update():
             print(f"Added Nendoroid {n['id']} - {n['name']}")
         else:
             print(f"Nendoroid {n['id']} - {n['name']} already exists, updating")
+            del n['owned']
             firestore_io.update(collection, n['id'], n)
     return "done"
 
