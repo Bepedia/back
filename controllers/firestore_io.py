@@ -3,6 +3,7 @@ import os
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter, Or
 
 cred = credentials.ApplicationDefault()
 
@@ -17,8 +18,8 @@ class FirestoreIO:
         self.db = firestore.client()
 
     def list(self, collection):
-        users_ref = self.db.collection(collection)
-        docs = users_ref.stream()
+        ref = self.db.collection(collection)
+        docs = ref.stream()
         docs_dict = []
         for doc in docs:
             doc_dict = doc.to_dict()
@@ -65,3 +66,25 @@ class FirestoreIO:
             doc_dict['id'] = doc.id
             docs_dict.append(doc_dict)
         return docs_dict
+
+    def search_nendoroids(self, collection, owned):
+        query = self.db.collection(collection)
+        if owned is not None:
+            if owned == 'owned':
+                query = query.where("owned", "==", True)
+            else:
+                query = query.where("owned", "==", False)
+        query = query.order_by("int_id")
+        docs = query.stream()
+        docs_dict = []
+        for doc in docs:
+            doc_dict = doc.to_dict()
+            doc_dict['id'] = doc.id
+            docs_dict.append(doc_dict)
+        return docs_dict
+    
+    def count_items(self, collection, filters):
+        query = self.db.collection(collection)
+        for f in filters:
+            query = query.where(f.get("attribute"), f.get("operator"), f.get("value"))
+        return query.count().get()[0][0].value

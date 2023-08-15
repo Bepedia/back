@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import copy 
 import re
 
+
 collection = 'nendoroids'
 
 nendoroids_bp = Blueprint(collection, __name__)
@@ -19,32 +20,19 @@ def list():
     if owned == "all":
         owned = None
 
-    all_nendoroids = firestore_io.list(collection)
+    all_nendoroids = firestore_io.search_nendoroids(collection, owned)
 
-    if query or owned:
+    if query:
         sorted = []
 
         for n in all_nendoroids:
-
-            if query:
-                if query.lower() in n['id'] or query.lower() in n['name'].lower():
-                    if owned:
-                        if owned == 'owned' and n['owned']:
-                            sorted.append(n)
-                        elif owned == 'not-owned' and not n['owned']:
-                            sorted.append(n)
-                    else:
-                        sorted.append(n)
-                    continue
-            if owned and not query:
-                if owned == 'owned' and n['owned']:
-                    sorted.append(n)
-                elif owned == 'not-owned' and not n['owned']:
-                    sorted.append(n)
+            if query.lower() in n['id'] or query.lower() in n['name'].lower():
+                sorted.append(n)
+                continue      
 
         all_nendoroids = copy.deepcopy(sorted)
     
-    all_nendoroids.sort(key=lambda n: n.get("int_id", '0'))
+    # all_nendoroids.sort(key=lambda n: n.get("int_id", '0'))
     return jsonify(all_nendoroids)
 
 
@@ -57,16 +45,24 @@ def patch(doc_id):
 @nendoroids_bp.route('/stats')
 def get_stats():
     firestore_io = FirestoreIO()
-    all_nendoroids = firestore_io.list(collection)
+    owned_count = firestore_io.count_items(collection, [
+        {
+            "attribute": "owned",
+            "operator": "==",
+            "value": True
+        }
+    ])
+    not_owned_count = firestore_io.count_items(collection, [
+        {
+            "attribute": "owned",
+            "operator": "==",
+            "value": False
+        }
+    ])
     stats = {
-        "owned": 0,
-        "not_owned": 0
+        "owned": owned_count,
+        "not_owned": not_owned_count
     }
-    for n in all_nendoroids:
-        if n.get("owned"):
-            stats["owned"] += 1
-        else:
-            stats["not_owned"] += 1
     return jsonify(stats)
 
 
